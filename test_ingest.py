@@ -1,9 +1,7 @@
-from app.services.ingestion import load_documents
-from app.services.chunking import chunk_text
-from app.services.embeddings import generate_embeddings
-from app.services.vector_store import save_vector_store
+from app.services.ingestion import build_vector_index
 
-docs = load_documents()
-chunks = chunk_text(docs)
-embeddings = generate_embeddings(chunks)
-save_vector_store(embeddings, chunks)
+result = build_vector_index()
+print(
+    f"Ingestion complete. Documents: {result['ingested_documents']}, "
+    f"Chunks: {result['generated_chunks']}"
+)

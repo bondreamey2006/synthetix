@@ -1,22 +1,44 @@
-from transformers import pipeline
+from functools import lru_cache
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from app.config import settings
+from app.utils.helpers import split_claims
 
-# Initializing with 'text-generation' for better stability in this environment
-# This resolves the KeyError: 'Unknown task text2text-generation'
-qa_pipeline = pipeline("text-generation", model="google/flan-t5-base")
 
-def generate_answer(question, context_chunks):
+@lru_cache(maxsize=1)
+def _load_generator():
+    tokenizer = AutoTokenizer.from_pretrained(settings.generation_model_name, token=settings.hf_token)
+    model = AutoModelForSeq2SeqLM.from_pretrained(settings.generation_model_name, token=settings.hf_token)
+    return tokenizer, model
+
+
+def generate_claims(question, context_chunks) -> list[str]:
     if not context_chunks:
-        return "I could not find this in the provided documents."
+        return []
 
-    context_text = "\n\n".join([c["chunk_text"] for c in context_chunks])
-    
-    # Strict prompt to ensure the output is just a clean paragraph
-    prompt = f"Answer the following question in one short paragraph using only the context.\nContext: {context_text}\nQuestion: {question}\nAnswer:"
+    tokenizer, model = _load_generator()
+    context_text = "\n".join(c["chunk_text"] for c in context_chunks)
 
-    # Generate the response
-    response = qa_pipeline(prompt, max_length=150, do_sample=False)
-    
-    # Extract only the text generated after the word 'Answer:'
-    full_text = response[0]['generated_text']
-    answer = full_text.split("Answer:")[-1].strip()
-    return answer
+    prompt = (
+        "You are a document QA system.\n"
+        "Rules:\n"
+        "1) Use only the provided context.\n"
+        "2) If context is insufficient, return exactly: NOT_FOUND\n"
+        "3) Output 2 to 4 concise factual claims.\n"
+        "4) Each claim must be one full sentence on a new line.\n\n"
+        f"Context:\n{context_text[:3200]}\n\n"
+        f"Question: {question}\n"
+        "Claims:\n"
+    )
+
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048)
+    output = model.generate(
+        **inputs,
+        max_new_tokens=140,
+        do_sample=False,
+    )
+    text = tokenizer.decode(output[0], skip_special_tokens=True).strip()
+    if "NOT_FOUND" in text.upper():
+        return []
+
+    claims = split_claims(text)
+    return claims[:4]

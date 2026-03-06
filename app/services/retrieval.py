@@ -1,34 +1,44 @@
-import faiss
-import numpy as np
-import pickle
-from sentence_transformers import SentenceTransformer
+from app.config import settings
+from app.services.embeddings import get_embedding_model
+from app.services.vector_store import load_vector_store
+from app.utils.helpers import clean_text
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
 
-def retrieve_context(query, k=5):
+def retrieve_context(query, k=None, namespace: str | None = None):
+    top_k = k or settings.retrieval_top_k
+    if top_k <= 0:
+        top_k = 1
+
     try:
-        # Load the index and metadata
-        index = faiss.read_index("vector_store/index.faiss")
-        with open("vector_store/metadata.pkl", "rb") as f:
-            chunks = pickle.load(f)
+        index, chunks = load_vector_store(namespace=namespace)
+        if index is None or not chunks:
+            return []
 
-        # Encode the user's question
-        query_vector = model.encode([query]).astype('float32')
-        
-        # Search for matches
-        distances, indices = index.search(query_vector, k)
-        
+        model = get_embedding_model()
+        query_vector = model.encode(
+            [query],
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+        ).astype("float32")
+
+        similarities, indices = index.search(query_vector, top_k)
         results = []
         for i, idx in enumerate(indices[0]):
-            if idx != -1:
-                # Calculate a simple score (higher is better)
-                score = float(1 / (1 + distances[0][i]))
-                results.append({
-                    "chunk_text": chunks[idx]["chunk_text"],
-                    "document": chunks[idx]["metadata"]["document_name"],
-                    "score": round(score, 2)
-                })
+            if idx == -1:
+                continue
+
+            chunk = chunks[idx]
+            score = max(0.0, min(1.0, float(similarities[0][i])))
+            results.append(
+                {
+                    "chunk_text": clean_text(chunk["chunk_text"]),
+                    "document": chunk["metadata"]["document_name"],
+                    "sentences": [clean_text(s) for s in chunk["metadata"].get("sentences", []) if clean_text(s)],
+                    "score": round(score, 4),
+                }
+            )
+
+        results.sort(key=lambda item: item["score"], reverse=True)
         return results
-    except Exception as e:
-        print(f"Retrieval error: {e}")
+    except Exception:
         return []

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartQnA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-a" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-b" aria-hidden="true"></div>
+
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="kicker">Claim-Grounded RAG</p>
+        <h1>SmartQnA</h1>
+        <p class="subtitle">Ask private documents with reliable sentence-level citations.</p>
+        <p id="workspaceInfo" class="hint">Workspace: loading...</p>
+      </div>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme">Light Mode</button>
+    </header>
+
+    <section class="panel panel-glass upload-panel">
+      <label for="files">Upload Documents</label>
+      <p class="hint">Supported: .txt, .md, .pdf</p>
+      <input id="files" type="file" multiple accept=".txt,.md,.pdf">
+      <div class="controls">
+        <button id="uploadBtn" type="button">Upload and Index</button>
+        <span id="uploadStatus" aria-live="polite"></span>
+      </div>
+      <p id="uploadMeta" class="upload-meta"></p>
+    </section>
+
+    <section class="panel panel-glass upload-panel">
+      <label>Manage Uploaded Files</label>
+      <p class="hint">Refresh to load latest files, select the ones you do not need, then delete.</p>
+      <div class="controls">
+        <button id="refreshDocsBtn" type="button">Refresh List</button>
+        <button id="selectAllDocsBtn" type="button">Select All</button>
+        <button id="unselectAllDocsBtn" type="button">Unselect All</button>
+        <button id="deleteSelectedBtn" type="button">Delete Selected</button>
+        <button id="clearAllBtn" type="button">Clear All</button>
+        <span id="docsStatus" aria-live="polite"></span>
+      </div>
+      <div id="docsList" class="docs-list"></div>
+    </section>
+
+    <section class="panel panel-glass ask-panel">
+      <label for="question">Your Question</label>
+      <textarea id="question" maxlength="1000" placeholder="Example: What has increased annually and by how much in the report?"></textarea>
+      <div class="controls">
+        <button id="askBtn" type="button">Get Answer</button>
+        <span id="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="panel panel-glass result-panel">
+      <div class="result-header">
+        <h2>Answer</h2>
+        <div class="result-meta">
+          <span id="overallScore" class="score-chip">Score: -</span>
+          <span id="confidenceBadge" class="badge">-</span>
+        </div>
+      </div>
+      <p id="answerText" class="answer-text">Submit a question to see a grounded response.</p>
+      <h3>Top Matched Citations (max 3)</h3>
+      <div id="sources" class="sources"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
