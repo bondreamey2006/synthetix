@@ -12,7 +12,7 @@ NOT_FOUND_MESSAGE = "I could not find this in the provided documents. Can you sh
 def _confidence_from_score(score: float) -> str:
     if score >= 0.7:
         return "high"
-    if score >= 0.5:
+    if score >= 0.45:
         return "medium"
     return "low"
 

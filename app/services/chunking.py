@@ -24,7 +24,7 @@ def _build_sentence_chunks(sentences: list[str], chunk_size: int, overlap_senten
     return chunks
 
 
-def chunk_text(documents, chunk_size=600, chunk_overlap=2, min_chunk_chars=100):
+def chunk_text(documents, chunk_size=300, chunk_overlap=50, min_chunk_chars=100):
     if chunk_size <= 0:
         raise ValueError("chunk_size must be > 0")
     if chunk_overlap < 0:
